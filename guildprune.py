@@ -5,6 +5,12 @@ from calendar import timegm
 import re
 from datetime import datetime,timedelta,date
 import pickle
+import os
+import platform
+
+#TODO: Cleanup code
+#TODO: Foolproof
+#TODO: Better console interface
 
 ERROR_DOESNTEXIST = 1
 ERROR_NETWORK = 2
@@ -80,7 +86,7 @@ def getPlayer(name,tries = 5):
     content = ""
     char = dict()
     if(tries == 0):
-        print("Couldn't fetch player after 5 tries")
+        print("Couldn't fetch {0} after 5 tries".format(name))
         return ERROR_NETWORK
     #Fetch website
     try:
@@ -137,25 +143,90 @@ def getLocalTime(tibiaTime):
     #Add/substract hours to get the real time
     return t + timedelta(hours=(local_utc_offset - utc_offset))
 
-guildname = "Redd Alliance"
-memberlist = loadData(guildname+".data")
-if memberlist is None:
-    print("no data found, gathering")
+def getDays(time):
+    """Returns the difference in days of a timedelta"""
+    if not isinstance(time, timedelta):
+        return None
+    days = time.days
+    if(days <= 0):
+        return "<1 day"
+    if(days == 1):
+        return "1 day"
+    return "{0} days".format(days)
+
+def getVocationAcronym(vocation):
+    """Given a vocation name, it returns an abbreviated string """
+    abbrev = {'None' : 'N', 'Druid' : 'D', 'Sorcerer' : 'S', 'Paladin' : 'P', 'Knight' : 'K',
+    'Elder Druid' : 'ED', 'Master Sorcerer' : 'MS', 'Royal Paladin' : 'RP', 'Elite Knight' : 'EK'}
+    try:
+        return abbrev[vocation]
+    except KeyError:
+        return 'N'
+
+def clearScreen():
+    if(platform.system() == "Linux"):
+        os.system("clear") 
+    else:
+        os.system("cls")
+    
+
+def fetchGuildData(guildname):
     memberlist = getGuildPlayers(guildname)
     for member in memberlist:
+        time.sleep(0.1)
         player = getPlayer(member['name'])
         if(type(player) is dict):
             member['status'] = player['status']
             member['lastlogin'] = getLocalTime(player['lastlogin'])
-    saveData(guildname+".data",memberlist)
-else:
-    print("data previously saved")
-print("before sort")
-for member in memberlist:
-    print("{name} - {level}".format(**member))
-print("***************************After sort****************************")
-memberlist = sorted(memberlist,key=itemgetter("joined"))
-for member in memberlist:
-    print("{name} - {level}".format(**member))
-print("done")
 
+if __name__ == "__main__":
+    minLevel = 1000
+    freeAccount = 0
+    daysInactive = 0
+    guildname = input("Enter the name (exact case) of the guild you want to check: ")
+    memberlist = loadData(guildname+".data")
+    if(memberlist is None):
+        print("Gathering guild data...")
+        fetchGuildData(guildname)
+        saveData(guildname+".data",memberlist)
+    else:
+        choice = input("Data for this guild was found, do you want to use this data instead of fetching new data? (y/n): ")
+        if(choice == "n"):
+            print("Gathering guild data...")
+            fetchGuildData(guildname)
+            saveData(guildname+".data",memberlist)
+    choice = ""
+    while(choice != "exit"):
+        print("1. List members")
+        print("2. Set mininum level")
+        print("3. Set account status")
+        print("4. Set days without logging")
+        print("5. Sort by level")
+        print("6. Sort by join date")
+        print("7. Sort by days without logging")
+        choice = input("Select an option: ")
+        clearScreen()
+        if(choice == "1"):
+            print(len(memberlist))
+            print()
+            print("Name\t\tLevel\tStatus\tTime in guild\tLast login")
+            for member in memberlist:
+                if(member["level"] <= minLevel and (member["status"] == "Free Account" or freeAccount == 0) and ((datetime.now()-member["lastlogin"]).days > daysInactive)):
+                    print("{0}\t\t{1} {2}\t{3}\t{4}\t{5}".format(member["name"],member["level"],getVocationAcronym(member["vocation"]),member["status"],getDays(datetime.now()-member["joined"]),getDays(datetime.now()-member["lastlogin"])))
+        if(choice == "2"):
+            print("If a mininum level is set, characters above this level won't be shown")
+            minLevel = int(input("Enter mininum level: "))
+        if(choice == "3"):
+            print("Select wether only free accounts will be considered or players with any status")
+            choice = input("1) Free account only 2) Any status:")
+            if(choice == "1"):
+                freeAccount = 1
+        if(choice == "4"):
+            days = input("Enter the number of days without logging in a member needs to be considered: ")
+            daysInactive = int(days)
+        if(choice == "5"):
+            memberlist = sorted(memberlist,key=itemgetter("level"))
+        if(choice == "6"):
+            memberlist = sorted(memberlist,key=itemgetter("joined"))
+        if(choice == "7"):
+            memberlist = sorted(memberlist,key=itemgetter("lastlogin"))
