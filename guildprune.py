@@ -207,7 +207,6 @@ if __name__ == "__main__":
         choice = input("Select an option: ")
         clearScreen()
         if(choice == "1"):
-            print(len(memberlist))
             print()
             print("Name\t\tLevel\tStatus\tTime in guild\tLast login")
             for member in memberlist:
