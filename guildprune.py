@@ -208,10 +208,10 @@ if __name__ == "__main__":
         clearScreen()
         if(choice == "1"):
             print()
-            print("Name\t\tLevel\tStatus\tTime in guild\tLast login")
+            print("Name".ljust(25)+"\tLevel\tAccount Status\tTime in guild\tLast login")
             for member in memberlist:
                 if(member["level"] <= minLevel and (member["status"] == "Free Account" or freeAccount == 0) and ((datetime.now()-member["lastlogin"]).days > daysInactive)):
-                    print("{0}\t\t{1} {2}\t{3}\t{4}\t{5}".format(member["name"],member["level"],getVocationAcronym(member["vocation"]),member["status"],getDays(datetime.now()-member["joined"]),getDays(datetime.now()-member["lastlogin"])))
+                    print("{0}\t{1} {2}\t{3}\t{4}\t{5}".format(member["name"].ljust(25),member["level"],getVocationAcronym(member["vocation"]),member["status"],getDays(datetime.now()-member["joined"]).ljust(15),getDays(datetime.now()-member["lastlogin"])))
         if(choice == "2"):
             print("If a mininum level is set, characters above this level won't be shown")
             minLevel = int(input("Enter mininum level: "))
