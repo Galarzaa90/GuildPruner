@@ -172,12 +172,20 @@ def clearScreen():
 
 def fetchGuildData(guildname):
     memberlist = getGuildPlayers(guildname)
+    if type(memberlist) !=  list:
+        return memberlist
+    i = 1
     for member in memberlist:
-        time.sleep(0.1)
+        time.sleep(0.15)
+        print("Fetching members: {0}/{1}".format(i,len(memberlist)))
         player = getPlayer(member['name'])
         if(type(player) is dict):
             member['status'] = player['status']
             member['lastlogin'] = getLocalTime(player['lastlogin'])
+        else:
+            print("error")
+        i+=1
+    return memberlist
 
 if __name__ == "__main__":
     minLevel = 1000
@@ -187,13 +195,13 @@ if __name__ == "__main__":
     memberlist = loadData(guildname+".data")
     if(memberlist is None):
         print("Gathering guild data...")
-        fetchGuildData(guildname)
+        memberlist = fetchGuildData(guildname)
         saveData(guildname+".data",memberlist)
     else:
         choice = input("Data for this guild was found, do you want to use this data instead of fetching new data? (y/n): ")
         if(choice == "n"):
             print("Gathering guild data...")
-            fetchGuildData(guildname)
+            memberlist = fetchGuildData(guildname)
             saveData(guildname+".data",memberlist)
     choice = ""
     while(choice != "exit"):
